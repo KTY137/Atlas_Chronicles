@@ -20,6 +20,7 @@ import "./tactical.css";
 import "./map-workshop.css";
 import "./NestedMapView.css";
 import { MapFloorsPanel } from "./MapFloorsPanel";
+import { stairLabel } from "./TacticalView";
 import { RoomFogControls } from "./RoomFogControls";
 
 export interface MapAncestor { kind: "atlas" | "tactical"; id: string; title: string; edit?: boolean; focus?: { id: string; x: number; y: number } }
@@ -91,11 +92,19 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
   }, [entrances, query, filter]);
   const scene = useMemo(() => {
     if (!map.data) return null;
-    const result = mapDocumentScene(mapId, map.data.document, entrances, children.data?.art, map.data.document.background ? map.data.rasterDigest ?? map.data.contentHash : undefined, children.data?.setting, map.data.cartography ?? map.data.legacyCartography);
-    return { ...result, pins: result.pins.map(pin => {
+    // A drawn map comes from the server as finished tiles, in the same Atlas look the table shows;
+    // furniture, walls, names and entrances are drawn live above them.
+    const painted = !!map.data.cartography && !map.data.document.background;
+    const result = mapDocumentScene(mapId, map.data.document, entrances, children.data?.art, map.data.document.background || painted ? map.data.rasterDigest ?? map.data.contentHash : undefined, children.data?.setting, map.data.cartography ?? map.data.legacyCartography);
+    return { ...result, ...(painted ? { drawing: undefined, paintCells: false } : {}), pins: result.pins.map(pin => {
       const node = entrances.find(item => item.knotenId === pin.id)!;
       return { ...pin, ...(node.vorhandeneKarteId ? { icon: "portal" as const } : {}) };
-    }).concat(floorLinks.map(link => ({ id: `floor-link:${link.id}`, x: link.position[0], y: link.position[1], label: link.name, icon: "portal" as const }))) };
+    }).concat(floorLinks.map(link => {
+      // The same words as at the table: where the stair leads, up or down.
+      const floors = floorData.data?.stack.floors ?? [], here = floors.find(floor => floor.mapId === mapId), there = floors.find(floor => floor.mapId === (link.fromMapId === mapId ? link.toMapId : link.fromMapId));
+      const label = here && there ? stairLabel({ id: link.id, name: link.name, kind: link.kind, x: link.position[0], y: link.position[1], toLevel: there.level, toName: there.name }, here.level) : link.name;
+      return { id: `floor-link:${link.id}`, x: link.position[0], y: link.position[1], label, icon: "portal" as const };
+    })) };
   }, [map.data, mapId, entrances, children.data?.art, children.data?.setting, floorData.data]);
 
   if (map.data && invalidated === map.data || !map.data && map.error) return <section className="atlas-feature nested-map-view" aria-label={t("Unterkarte")}><Notice error>{t("Die Kartensicht ist nicht mehr verfügbar. Namen und Kartenobjekte werden erst nach einer neuen erlaubten Antwort angezeigt.")}</Notice><Button onClick={onChanged}>{t("Kartensicht erneut laden")}</Button><Button onClick={onRoot}>{t("Zur Hauptkarte")}</Button></section>;
@@ -120,7 +129,7 @@ export function NestedMapView({ campaignId, mapId, revision, onNavigate, onRoot,
       <RoomFogControls key={`fog:${mapId}:${map.data.revision}`} campaignId={campaignId} mapId={mapId} mapRevision={map.data.revision} selectedRoomId={selectedId} onChanged={onChanged} disabled={dirty} />
     </> : null}
     {map.data && scene ? editing ? <><MapEditor key={mapId} current={map.data} campaignId={campaignId} onChanged={onChanged} onDirty={reportMap} onContextMenu={canvasContext} onOpenInterior={(nodeId, childId) => { if (childId) navigate({ kind: "tactical", id: childId, title: entrances.find(node => node.knotenId === nodeId)?.titel ?? "Innenraum", edit: true }); else if (guard()) { setSelectedId(nodeId); setEditing(false); } }} /><ScenePlan key={`plan:${mapId}`} campaignId={campaignId} map={map.data} revision={revision} onChanged={onChanged} onDirty={reportPlan} /></>
-      : <div className="nested-map-workspace"><div className="nested-map-stage"><TacticalCanvas scene={scene} onContextMenu={canvasContext} tileBase={`${path}/tiles`} tileQuery={`revision=${map.data.revision}&layer=background`} onScopeInvalidated={() => { setInvalidated(map.data); setSelectedId(""); onChanged(); }}
+      : <div className="nested-map-workspace"><div className="nested-map-stage"><TacticalCanvas scene={scene} onContextMenu={canvasContext} tileBase={`${path}/tiles`} tileQuery={map.data.cartography && !map.data.document.background ? `revision=${map.data.revision}` : `revision=${map.data.revision}&layer=background`} onScopeInvalidated={() => { setInvalidated(map.data); setSelectedId(""); onChanged(); }}
         selection={selected ? { kind: "pin", id: selected.knotenId } : null} focusObject={initialFocus && selectedId === initialFocus.id ? initialFocus : selected ? { id: selected.knotenId, x: selected.x, y: selected.y } : null}
         onSelect={hit => {
           if (hit?.kind === "pin" && hit.id.startsWith("floor-link:")) {

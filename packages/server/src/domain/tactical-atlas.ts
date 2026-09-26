@@ -28,6 +28,8 @@ export interface AtlasInput {
   readonly buildings: readonly AtlasBuilding[];
   readonly forest: readonly (readonly TacticalPoint[])[];
   readonly walls: readonly (readonly TacticalPoint[])[];
+  /** A room plan: no town pass, but the floor darkens towards the foot of every wall. */
+  readonly innen?: boolean;
 }
 export const ATLAS_LIMITS = Object.freeze({ polygons: 40_000, points: 400_000, pixelWrites: 96_000_000 });
 
@@ -44,8 +46,9 @@ export function atlasCopy(input: AtlasInput): AtlasInput {
     return value.map(point => { if (!Array.isArray(point) || point.length !== 2 || !finite(point[0]) || !finite(point[1])) fail("invalid atlas point"); return [point[0], point[1]] as TacticalPoint; });
   };
   const list = <T>(value: readonly T[]): readonly T[] => { if (!Array.isArray(value)) fail("invalid atlas list"); return value; };
+  if (input.innen !== undefined && typeof input.innen !== "boolean") fail("invalid atlas interior flag");
   return {
-    setting: input.setting, cell: input.cell, night: input.night, winter: input.winter,
+    setting: input.setting, cell: input.cell, night: input.night, winter: input.winter, ...(input.innen ? { innen: true } : {}),
     water: list(input.water).map(p => ring(p)),
     roads: list(input.roads).map(road => { if (!road || typeof road.material !== "string" || road.material.length > 32) fail("invalid atlas road"); return { points: ring(road.points), material: road.material }; }),
     buildings: list(input.buildings).map(b => { if (!b || !finite(b.height) || b.height < 0 || b.height > 20) fail("invalid atlas building"); return { points: ring(b.points), height: b.height }; }),
@@ -157,11 +160,42 @@ const LIGHT = (() => { const l = Math.hypot(.56, .83); return [.56 / l, .83 / l]
 /** Schattenlänge je Höhe in Zellen; so lang wie in den Entwürfen am Tag. */
 const SHADOW_PER_HEIGHT = .3;
 
+/**
+ * Innenräume: der Boden dunkelt zum Fuß jeder Wand hin ab (der Kontaktschatten, der einen Grundriss
+ * erst räumlich macht) und ist leicht gefleckt. Möbel, Türen und Wände liegen darüber.
+ */
+async function paintInnen(rgba: Buffer, input: AtlasInput, geometry: Geometry, job: Pausable): Promise<void> {
+  const { width, height, left, top, factor } = geometry, cell = input.cell, perCell = cell / factor;
+  if (perCell < 2) return;
+  const margin = Math.ceil(cell * .3 / factor) + 2;
+  const grid: Grid = { w: width + margin * 2, h: height + margin * 2, x0: (left - margin) * factor, y0: (top - margin) * factor, step: factor };
+  const { w, h } = grid, wall = new Uint8Array(w * h);
+  let writes = 0;
+  for (const line of input.walls) if ((writes += thick(wall, grid, line, Math.max(factor * .5, cell * .05), 0, 0)) > ATLAS_LIMITS.pixelWrites) fail("atlas pixel-write work budget exceeded");
+  await job.pause();
+  const dWall = edt(wall, w, h, 1), reach = .28;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const at = (y * width + x) * 4; if (rgba[at + 3] === 0) continue;
+      const gi = (y + margin) * w + (x + margin), wx = (left + x + .5) * factor / cell, wy = (top + y + .5) * factor / cell;
+      let f = .95 + .1 * fbm(wx * .6, wy * .6, 13, 2);
+      const d = dWall[gi]! / perCell; if (d < reach) { const t = 1 - d / reach; f *= 1 - .42 * t * t; }
+      rgba[at] = clamp(Math.round(rgba[at]! * f), 0, 255); rgba[at + 1] = clamp(Math.round(rgba[at + 1]! * f), 0, 255); rgba[at + 2] = clamp(Math.round(rgba[at + 2]! * f), 0, 255);
+    }
+    if ((y & 15) === 0) await job.pause();
+  }
+  job.check();
+}
+
 /** Die Atlas-Runde über `rgba` (die schon gemalte Kachel). `visible` wird danach wie immer angewandt. */
 export async function paintAtlas(rgba: Buffer, input: AtlasInput, geometry: Geometry, job: Pausable): Promise<void> {
+  if (input.innen) return paintInnen(rgba, input, geometry, job);
   const { width, height, left, top, factor } = geometry, cell = input.cell, perCell = cell / factor;
-  // Tiles far out (a cell smaller than two pixels) keep the flat picture: texture there is only noise.
-  if (perCell < 2) return;
+  // Far out (less than a pixel per cell) the flat picture stays. Water and shadows carry down to a
+  // pixel per cell; paving and joints only where they are larger than the pixels drawing them,
+  // so zooming out keeps the look instead of switching it off.
+  if (perCell < 1) return;
+  const fine = perCell >= 4, lines = perCell >= 3;
   const maxHeight = input.buildings.reduce((m, b) => Math.max(m, b.height), 1);
   const margin = Math.ceil((Math.max(.6, maxHeight * SHADOW_PER_HEIGHT * 1.2) * cell) / factor) + 2;
   const grid: Grid = { w: width + margin * 2, h: height + margin * 2, x0: (left - margin) * factor, y0: (top - margin) * factor, step: factor };
@@ -172,10 +206,15 @@ export async function paintAtlas(rgba: Buffer, input: AtlasInput, geometry: Geom
   let writes = 0;
   const budget = (n: number) => { if ((writes += n) > ATLAS_LIMITS.pixelWrites) fail("atlas pixel-write work budget exceeded"); };
 
-  const water = new Uint8Array(size), road = new Uint8Array(size), build = new Uint8Array(size), park = new Uint8Array(size), wood = new Uint8Array(size), deck = new Uint8Array(size);
+  const water = new Uint8Array(size), road = new Uint8Array(size), build = new Uint8Array(size), park = new Uint8Array(size), wood = new Uint8Array(size), deck = new Uint8Array(size), street = new Uint8Array(size);
   const decks = input.roads.filter(r => (r.material === "bridge" || r.material === "steg") && near(r.points));
   for (const p of input.water) if (near(p)) budget(fill(water, grid, p));
-  for (const r of input.roads) if (near(r.points)) { budget(fill(road, grid, r.points)); if (r.material === "parking") budget(fill(park, grid, r.points)); }
+  for (const r of input.roads) if (near(r.points)) {
+    budget(fill(road, grid, r.points));
+    if (r.material === "parking") budget(fill(park, grid, r.points));
+    // Kerbs, pavements and centre lines belong to streets, not to squares, paths or car parks.
+    if (r.material === "street") budget(fill(street, grid, r.points));
+  }
   // Bridges and jetties keep their drawn planks: neither water nor paving is painted over them.
   for (const r of decks) budget(fill(deck, grid, r.points));
   const buildings = input.buildings.filter(b => near(b.points));
@@ -222,16 +261,22 @@ export async function paintAtlas(rgba: Buffer, input: AtlasInput, geometry: Geom
       } else if (!build[gi]) {
         const land = !road[gi]; let f = 1;
         if (land) {
-          f *= .86 + .26 * fbm(wx * .42, wy * .42, 11, 3); f *= .965 + .07 * hash2(x + left, y + top, 1);
+          f *= .86 + .26 * fbm(wx * .42, wy * .42, 11, 3); if (fine) f *= .965 + .07 * hash2(x + left, y + top, 1);
         } else {
           const dR = rIn[gi]! / perCell;
           if (input.setting === "fantasy") {
             // Cobbles: Worley cells with dark joints, darker towards the gutters.
-            worley(wx * 5.2, wy * 5.2, k0); const f1 = WR[0]!, f2 = WR[1]!, id = WR[2]!, joint = f2 - f1;
-            f *= .9 + .18 * id; if (joint < .09) f *= .72 + 2.8 * joint; f *= 1 - .5 * f1 * f1;
+            if (fine) { worley(wx * 5.2, wy * 5.2, k0); const f1 = WR[0]!, f2 = WR[1]!, id = WR[2]!, joint = f2 - f1;
+              f *= .9 + .18 * id; if (joint < .09) f *= .72 + 2.8 * joint; f *= 1 - .5 * f1 * f1; }
+            else f *= .93 + .06 * rausch(wx * 2, wy * 2, k0);
             if (dR < .07) f *= .8 + 2.8 * dR;
           } else if (input.setting === "gegenwart") {
             if (park[gi]) f *= .95 + .07 * hash2(x + left, y + top, 4);
+            else if (!street[gi]) {
+              // Squares and paths: large pale slabs with fine joints.
+              if (fine) { const fu = Math.min((wx * 1.6) % 1, (wy * 1.6) % 1); if (fu < .03) f *= .92; f *= .97 + .05 * hash2(Math.floor(wx * 1.6), Math.floor(wy * 1.6), 5); }
+            }
+            else if (!lines) f *= .95 + .05 * rausch(wx * 2, wy * 2, 3);
             else if (dR < .11) { f *= 1.34; const fu = Math.min((wx * 2.6) % 1, (wy * 2.6) % 1); if (fu < .04) f *= .9; }
             else if (dR < .135) f *= .62;
             else {
@@ -240,7 +285,8 @@ export async function paintAtlas(rgba: Buffer, input: AtlasInput, geometry: Geom
               if (dR > .2 && dR < .55 && crest && ((wx + wy) * 2.2) % 1 < .55) { r = Math.min(255, r * 2.3); g = Math.min(255, g * 2.3); b = Math.min(255, b * 2.2); }
             }
           } else {
-            const fu = Math.min((wx * 2) % 1, (wy * 2) % 1); if (fu < .035) f *= .7; f *= .92 + .12 * hash2(Math.floor(wx * 2), Math.floor(wy * 2), 9);
+            if (fine) { const fu = Math.min((wx * 2) % 1, (wy * 2) % 1); if (fu < .035) f *= .7; }
+            f *= .92 + .12 * hash2(Math.floor(wx * 2), Math.floor(wy * 2), 9);
             if (dR < .06) { const a = (1 - dR / .06) * .7; r = mix(r, GLOW[0], a); g = mix(g, GLOW[1], a); b = mix(b, GLOW[2], a); }
           }
         }

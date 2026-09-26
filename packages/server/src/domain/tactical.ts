@@ -33,11 +33,15 @@ function visiblePoint(view: Pick<P.TacticalView, "size" | "regions">, x: number,
 }
 export class TacticalValidationError extends Error { readonly statusCode = 400; }
 /** Version of the Atlas pass; part of every town tile's digest, so a change repaints them. */
-const ATLAS_VERSION = "atlas-1";
+const ATLAS_VERSION = "atlas-2";
 /** A town plan (buildings, no rooms) gets the Atlas pass over its flat drawing. */
 function atlasInput(map: P.TacticalMapCard, setting: KartenSetting): AtlasInput | undefined {
   const cartography = map.cartography;
-  if (!cartography || map.document.background !== null || !cartography.regions.some(r => r.role === "building") || cartography.regions.some(r => r.role === "room")) return undefined;
+  if (!cartography || map.document.background !== null) return undefined;
+  // A room plan (house, dungeon, cave) gets the interior pass: contact shadow at every wall's foot.
+  if (cartography.regions.some(r => r.role === "room")) return { setting, cell: cartography.construction.cellSize, night: cartography.mood === "nacht", winter: cartography.mood === "winter",
+    water: [], roads: [], buildings: [], forest: [], walls: map.document.walls.map(wall => [...wall.points]), innen: true };
+  if (!cartography.regions.some(r => r.role === "building")) return undefined;
   const points = new Map(map.document.geometry.regions.map(region => [region.id, region.punkte]));
   const cell = cartography.construction.cellSize, water: TacticalPoint[][] = [], roads: AtlasInput["roads"][number][] = [], buildings: AtlasInput["buildings"][number][] = [], forest: TacticalPoint[][] = [];
   for (const role of cartography.regions) {
@@ -114,7 +118,7 @@ async function mapCard(tx: Db, campaignId: string, mapId: string, revision?: num
     const compositionHash = tacticalCompositionHash(row.contentHash, cartographyHash);
     const original = (await tx.query<{ provenance: UvttProvenance }>("SELECT provenance FROM tactical_sources WHERE campaign_id=$1 AND id=$2", [campaignId, row.sourceId])).rows[0];
     if (!original) throw new Gone();
-    const rasterDigest = tacticalHash({ mapRevision: row.revision, compositionHash, rendererVersion, setting: original.provenance.setting ?? "fantasy" });
+    const rasterDigest = tacticalHash({ mapRevision: row.revision, compositionHash, rendererVersion, atlas: ATLAS_VERSION, setting: original.provenance.setting ?? "fantasy" });
     return { ...row, document, anchors: bindings, cartography, cartographyHash, compositionHash, rasterDigest };
   }
   if ((await tx.query("SELECT 1 FROM tactical_map_cartography WHERE campaign_id=$1 AND map_id=$2 AND map_revision<$3 LIMIT 1", [campaignId, mapId, row.revision])).rowCount) throw new Gone();
@@ -694,8 +698,10 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       const original = await source(tx, campaignId, map.sourceId);
       const image = imageBytes(original);
       if (layer === "background" && image === null) throw new TacticalValidationError("Diese Karte besitzt kein ursprüngliches Hintergrundbild.");
+      const atlas = layer !== "background" ? atlasInput(map, original.provenance.setting ?? "fantasy") : undefined;
       return { revision: map.revision, digest, request: { image, documentSize: map.document.geometry.size, regions: null, level, x, y, tileSize: 256,
-        ...(layer !== "background" && map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}) } };
+        ...(layer !== "background" && map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}),
+        ...(atlas ? { atlas } : {}) } };
     });
     const tile = await renderTacticalTile(input.request);
     const current = await getMap(userId, campaignId, mapId, input.revision);

@@ -346,6 +346,8 @@ function baueGeschoss(b: GeschossBau): { stufe: number; grundriss: Grundriss; pl
       const u = (k - (kopien - 1) / 2) * ew, cx = m.x + m.fw / 2 + (m.o % 2 === 0 ? u : 0), cy = m.y + m.fh / 2 + (m.o % 2 === 0 ? 0 : u);
       werk.setze(asset, cx - ew / 2, cy - eh / 2, DREHUNG[m.o]);
     }
+    // A rug or runner lies on the floor: under every piece of furniture and without a cast shadow.
+    if (m.boden) for (let k = vorher; k < werk.stamps.length; k++) werk.stamps[k] = { ...werk.stamps[k]!, l: -50 };
     claim(m.raum, vorher);
     if (!m.boden) for (let y = m.y; y < m.y + m.fh; y++) for (let x = m.x; x < m.x + m.fw; x++) belegt.add(idx(x, y));
     const L = LICHT[m.typ] ?? (asset.art === "licht" ? { farbe: asset.schlagworte.includes("kerze") ? "ffe8c98a" : "ffdd8a33", staerke: asset.schlagworte.includes("kerze") ? .55 : .9 } : undefined);
