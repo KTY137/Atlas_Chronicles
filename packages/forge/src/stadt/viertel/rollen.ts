@@ -71,7 +71,9 @@ export function weiseRollenZu(lagen: readonly FleckLage[], markt: number, a: Rol
       for (const l of beste(lagen.filter(l => !l.kern), l => (l.tor ? 1 : 0) - l.hoehe * .01).slice(0, Math.max(1, Math.round(n * .14)))) rollen.set(l.nr, "arm");
     if (!planHat(a, "frei") && n >= 14) {
       const tempel = [...rollen].find(([, rolle]) => rolle === "tempel")?.[0];
-      const p = beste(nachbarVon(tempel === undefined ? [markt] : [tempel]).filter(l => l.kern), l => -l.flaeche)[0];
+      // Der Park liegt am Tempel; sind dort schon alle Flecken vergeben, dann am Markt.
+      const p = beste(nachbarVon(tempel === undefined ? [markt] : [tempel]).filter(l => l.kern), l => -l.flaeche)[0]
+        ?? beste(nachbarVon([markt]).filter(l => l.kern), l => -l.flaeche)[0];
       if (p) rollen.set(p.nr, "frei");
     }
   } else if (a.art === "dorf" && !planHat(a, "handwerk")) {

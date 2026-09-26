@@ -14,6 +14,11 @@ export {
 export type {
   GrundrissOptionen, GrundrissEltern, GrundrissAuftrag, GrundrissRaum, GrundrissBericht, Grundriss,
 } from "./grundriss.ts";
+export { HAUS_ERZEUGER, HAUS_VERSION, HAUS_LIMITS, erzeugeHaus, geschossName, strassenSeite } from "./haus/karte.ts";
+export type { Haus, HausAuftrag, HausGeschoss, HausTreppe } from "./haus/karte.ts";
+export { planeHaus, rahmenRechteck } from "./haus/plan.ts";
+export type { HausPlan, HausGeschossPlan, HausRaum, HausTuer, HausFenster, HausMoebel, HausTreppe as HausTreppenblock } from "./haus/plan.ts";
+export { programmFuer, moebelFuer } from "./haus/programme.ts";
 export { HOEHLE_ERZEUGER, HOEHLE_VERSION, HOEHLE_LIMITS, HOEHLE_STANDARD, erzeugeHoehle } from "./hoehle.ts";
 export type { HoehleOptionen, HoehleAuftrag } from "./hoehle.ts";
 export { VERSCHACHTELUNG_VERSION, MAX_MASSSTABSSPRUNG, erzeugeVerschachtelt } from "./verschachtelung.ts";

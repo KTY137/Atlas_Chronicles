@@ -8,7 +8,8 @@ import { roofZone, zoneBuilding, zoneDraw } from "../../siedlung-plan.ts";
 import type { Siedlung, SiedlungBauwerk, SiedlungGrund, SiedlungStrasse } from "../../siedlung.ts";
 import { ausstattung, dokument, kappeAnHindernissen, kreuzungen, ohneLaengsFluss, stege, wasserUndBruecken, type Ablage, type ExtraRegion, type Wand } from "../abschluss.ts";
 import { freieMauer, getrennteDaecher, hausImLos, mitAbstand, ohne, type Gasse } from "../gemeinsam.ts";
-import { fail } from "../../kartenwerk.ts";
+import { canonicalHash } from "@chronicle/core";
+import { fail, rauschen } from "../../kartenwerk.ts";
 import { bauernhof, flurStreifen } from "./flur.ts";
 import { kantengraph, weg } from "./graph.ts";
 import { mauerKanten, mauerLinien, turmPunkte, waehleTore, zwoelfeck } from "./mauer.ts";
@@ -244,6 +245,9 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
   // -- 7. Höfe an der Landstraße, dann das Budget ----------------------------------------------
   const hoefeLimit = stil.hoefe(art);
   const hofLose: Polygon[] = [];
+  // Die Höfe ziehen aus einem eigenen Strom: eine in der Stadt gemalte Zone ändert dort die
+  // Parzellen, darf aber draußen keinen Hof verschieben (Fantasy bleibt v11).
+  const rHof = rauschen(canonicalHash({ keim: layoutKeim.keimHash, stufe: "hoefe" }));
   for (const [i, f] of alle.entries()) {
     if (istStadt(i) || !trocken[i] || hofLose.length >= hoefeLimit || standort === "wald") continue;
     if (landschaft.feuchte(f.punkt[0], f.punkt[1]) >= landschaft.waldSchwelle) continue;
@@ -255,8 +259,9 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     if (nx * (sp[0] - strasse.von[0]) + ny * (sp[1] - strasse.von[1]) < 0) { nx = -nx; ny = -ny; }
     const streifen = clipHalbebene(f.zelle, nx, ny, nx * strasse.von[0] + ny * strasse.von[1] + 3.4);
     if (streifen.length < 3) continue;
-    const hof = bauernhof(clipHalbebene(streifen, -nx, -ny, -(nx * strasse.von[0] + ny * strasse.von[1] + flaeche(strasse.band) / l / 2 + .1)), strasse, f.pfad, r);
-    if (!hof.length || hof.some(h => bauHindernisse.some(w => flaeche(schnittKonvex(h.los, w)) > 1e-6))) continue;
+    const hof = bauernhof(clipHalbebene(streifen, -nx, -ny, -(nx * strasse.von[0] + ny * strasse.von[1] + flaeche(strasse.band) / l / 2 + .1)), strasse, f.pfad, rHof);
+    // Wie jedes Haus weicht ein Hof Wasser, Fels und den geplanten Straßen aus.
+    if (!hof.length || hof.some(h => [...bauHindernisse, ...reserviert].some(w => flaeche(schnittKonvex(h.los, w)) > 1e-6))) continue;
     for (const h of hof) baue.push({ ...h, ferne: f.ferne, rolle: "weiler" });
     hofLose.push(hof[0]!.los);
   }
@@ -425,9 +430,26 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     const alle = gewaehlt.filter(b => typ.get(b.pfad) === einmal);
     if (alle.length < 2) continue;
     const zumMarkt = (b: typeof alle[number]) => { const m = schwerpunkt(b.umriss); return Math.hypot(m[0] - marktMitte[0], m[1] - marktMitte[1]); };
-    const bleibt = [...alle].sort((x, y) => Number(y.rolle === "burg") - Number(x.rolle === "burg") || x.rang - y.rang || zumMarkt(x) - zumMarkt(y) || (x.pfad < y.pfad ? -1 : 1))[0]!;
+    // „In der Zone" heißt: das Dach liegt in ihr, nicht bloß der Fleck, zu dem es gehört.
+    const inZone = (b: typeof alle[number]) => { const zone = planung?.zonen.length ? roofZone(planung, b.umriss.map(([x, y]) => [x / breite, y / hoehe] as const)) : undefined; return zone !== undefined && zone !== "excluded"; };
+    const bleibt = [...alle].sort((x, y) => Number(inZone(y)) - Number(inZone(x)) || Number(y.rolle === "burg") - Number(x.rolle === "burg") || x.rang - y.rang || zumMarkt(x) - zumMarkt(y) || (x.pfad < y.pfad ? -1 : 1))[0]!;
     for (const b of alle) if (b !== bleibt) { typ.set(b.pfad, ersatz); umgetypt.add(b.pfad); }
   }
+  // Die Adresse ist die Straße vor der Tür (A-G5): ein Haus, dessen Parzelle an einer Gasse hing,
+  // das aber an eine andere, nähere Straße gerückt ist, nennt die nähere. Sonst zeigte die Adresse
+  // auf eine Gasse hinter dem Nachbarhaus, und die Haustür des Innenraums fände ihre Straße nicht.
+  const randAbstand = (a: Polygon, b: Polygon): number => {
+    let d = Infinity;
+    for (const [von, zu] of [[a, b], [b, a]] as const) for (const p of von) for (let k = 0; k < zu.length; k++) d = Math.min(d, abstandPolygonStrecke([p], zu[k]!, zu[(k + 1) % zu.length]!));
+    return d;
+  };
+  const vorDerTuer = (b: { readonly umriss: Polygon; readonly strasse: string }): string => {
+    const eigen = strassen.find(s => s.id === b.strasse), bisher = eigen ? randAbstand(b.umriss, eigen.umriss) : Infinity;
+    if (bisher <= 1) return b.strasse;
+    let beste = b.strasse, abstand = bisher;
+    for (const s of strassen) { const d = randAbstand(b.umriss, s.umriss); if (d < abstand - 1e-9) { abstand = d; beste = s.id; } }
+    return beste;
+  };
   const titelGesehen = new Set<string>();
   const bauwerke: SiedlungBauwerk[] = gewaehlt.map((b, i) => {
     const t = typ.get(b.pfad)!;
@@ -435,7 +457,7 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     if (titelGesehen.has(titel)) titel = `${titel} ${i + 1}`;
     titelGesehen.add(titel);
     const dach = stil.dach(t);
-    return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasse, typ: t, titel, ...(dach ? { dach } : {}) };
+    return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: vorDerTuer(b), typ: t, titel, ...(dach ? { dach } : {}) };
   });
   // Heutige Gebäude und Kuppeln sind größer als Fantasy-Häuser: die verlangte Zahl ist ein Höchstwert.
   // Bleibt die Karte deutlich darunter, sagt der Bericht es und warum (Schlussprüfung Teil 2).
