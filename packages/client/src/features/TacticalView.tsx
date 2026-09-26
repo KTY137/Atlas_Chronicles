@@ -70,7 +70,9 @@ export function LiveBoard({ campaignId, gm, revision, onChanged, onDirty, onOpen
     // The complete pinned document is present only in the GM projection. Players retain
     // their knowledge-filtered regions and entities; no private stamps or names enter it.
     const authored = data.gm && data.document ? mapDocumentScene(data.sessionId, data.document, (mapNodes.data?.nodes ?? []).filter(node => data.document!.geometry.regions.some(region => region.id === node.knotenId)), mapNodes.data?.art, undefined, mapNodes.data?.setting, data.cartography) : null;
-    const raster = data.hatRaster && !(data.gm && data.cartography && !data.document?.background);
+    // The table shows everyone the server's picture (the Atlas pass on towns); the game master's
+    // furniture, walls, names and lights are drawn live above it.
+    const raster = data.hatRaster;
     return { ...authored,
     id: data.sessionId, width: data.size[0], height: data.size[1], ...(raster ? { rasterScope: data.rasterDigest } : {}),
     ...(raster && (!data.gm || data.cartography) ? { drawing: undefined, paintCells: false } : {}),

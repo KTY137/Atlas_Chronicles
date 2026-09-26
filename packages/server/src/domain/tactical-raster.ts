@@ -6,6 +6,8 @@ import sharp from "sharp";
 import { inspectUvttImage } from "@chronicle/forge";
 import { TACTICAL_MAP_LIMITS, type TacticalImageRef, type TacticalPoint } from "@chronicle/szene";
 import type { CartographyDrawing } from "../../../szene/src/cartography-projection.ts";
+import { overlayCopy, paintOverlay, type TacticalOverlay } from "./tactical-overlay.ts";
+import { atlasCopy, paintAtlas, type AtlasInput } from "./tactical-atlas.ts";
 
 /** Derived artifacts only. Never use this private cache identity as a player-visible revision. */
 export const TACTICAL_RASTER_DECODER_ID = `chronicle-raster-v1:center-evenodd-union:whole-footprint-box:rgba8:${JSON.stringify(Object.fromEntries(Object.entries(sharp.versions).sort(([a], [b]) => a.localeCompare(b, "en"))))}`;
@@ -26,6 +28,10 @@ export interface TacticalTileRequest {
    * Coarse pixels require every base pixel in their box footprint to be authorized. */
   readonly regions: readonly TacticalRasterPolygon[] | null;
   readonly level: number; readonly x: number; readonly y: number; readonly tileSize?: number;
+  /** What stands in the rooms and their walls, for a player's tile; drawn before the mask. */
+  readonly overlay?: TacticalOverlay;
+  /** The Atlas pass over a town's flat drawing: water, paving, contact and cast shadows. */
+  readonly atlas?: AtlasInput;
 }
 export interface TacticalTile { readonly bytes: Buffer; readonly mimeType: "image/png"; readonly width: number; readonly height: number }
 export interface CartographyImageRequest {
@@ -372,6 +378,8 @@ export function createTacticalRasterService(options: TacticalRasterOptions = {})
       if (!request || typeof request !== "object") fail("tile request required");
       const geometry = tileGeometry(request), polygons = polygonsCopy(request.regions, geometry.sourceHeight), image = request.image === null ? null : sourceCopy(request.image);
       const drawing=request.drawing===undefined?undefined:drawingCopy(request.drawing,[geometry.sourceWidth,geometry.sourceHeight]);
+      const overlay=request.overlay===undefined?undefined:overlayCopy(request.overlay);
+      const atlas=request.atlas===undefined||drawing===undefined?undefined:atlasCopy(request.atlas);
       return run(async job => {
         let source: MaskedSource | null = null;
         if (image !== null) {
@@ -388,7 +396,17 @@ export function createTacticalRasterService(options: TacticalRasterOptions = {})
           }
         }
         const rgba = await boxTile(source, geometry, job);
-        if(drawing)await paintDrawing(rgba,drawing,geometry,await tileVisibility(polygons,geometry,job),image===null,job);
+        const visible=drawing||overlay?await tileVisibility(polygons,geometry,job):null;
+        if(drawing)await paintDrawing(rgba,drawing,geometry,visible,image===null,job);
+        if(atlas) {
+          await paintAtlas(rgba,atlas,geometry,job);
+          if(visible!==null)for(let pixel=0;pixel<visible.length;pixel++)if(!visible[pixel])rgba.fill(0,pixel*4,pixel*4+4);
+        }
+        if(overlay) {
+          // Furniture and walls reach into the room next door; the mask cuts them where it cuts the floor.
+          await paintOverlay(rgba,overlay,geometry,job);
+          if(visible!==null)for(let pixel=0;pixel<visible.length;pixel++)if(!visible[pixel])rgba.fill(0,pixel*4,pixel*4+4);
+        }
         // Fresh raw input drops source EXIF/XMP/ICC/text chunks. Alpha-zero RGB is already zero.
         return encodeTile(rgba,geometry,job);
       });

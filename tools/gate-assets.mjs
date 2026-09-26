@@ -33,7 +33,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { parseAssetpaket, assetIndex } from "@chronicle/szene";
+import { parseAssetpaket, assetIndex, SVG_VERBOTEN } from "@chronicle/szene";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const PACKS = join(ROOT, "assets", "packs");
@@ -53,18 +53,8 @@ const ERZEUGTE_BILDER = [
   { was: "assets/loot/chronicle-heroes", skript: "tools/assets/erzeuge-lootkarten.mjs" },
 ];
 
-/** Anything that turns a drawing into an execution or a fetch. Case-insensitive, source-level. */
-const SVG_VERBOTEN = [
-  { muster: /<script[\s>]/i, warum: "script element" },
-  { muster: /<foreignObject[\s>]/i, warum: "foreignObject" },
-  { muster: /<(?:image|use)[\s>]/i, warum: "external or raster reference element" },
-  { muster: /\son[a-z]+\s*=/i, warum: "inline event handler" },
-  { muster: /(?:href|xlink:href)\s*=\s*["']?(?!#)/i, warum: "non-fragment href" },
-  { muster: /url\s*\(\s*["']?(?!#)/i, warum: "non-fragment url() reference" },
-  { muster: /javascript:/i, warum: "javascript: URL" },
-  { muster: /<!ENTITY/i, warum: "entity declaration" },
-  { muster: /<!DOCTYPE/i, warum: "doctype" },
-];
+// Anything that turns a drawing into an execution or a fetch: one rule, shared with the server
+// that rasterizes pack art for the players' tiles (`@chronicle/szene`, `svg-zeichnung.ts`).
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 

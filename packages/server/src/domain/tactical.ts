@@ -6,8 +6,8 @@ import type { Static, TSchema } from "@sinclair/typebox";
 import { resolvePassage, type LineageEvent } from "@chronicle/chronik";
 import { trustPassageId } from "@chronicle/core";
 import { importUvtt, exportUvtt, exportTacticalUvtt, inspectUvttImage, type UvttImage, type UvttProvenance, type FidelityReport } from "@chronicle/forge";
-import { cartographyDraw, cartographyLabelAnchor, rendererVersion, inferLegacyCartography, parseBoundedMapJson, parseTacticalCartography, parseTacticalMapDocument, tacticalCartographyHash, tacticalCompositionHash, TACTICAL_MAP_LIMITS,
-  type BuildingIntent, type CartographyRegionV1, type Knoten, type LegacyCartographyEvidence, type TacticalCartographyV1, type TacticalMapDocumentV1 } from "@chronicle/szene";
+import { cartographyDraw, cartographyLabelAnchor, cartographyPaintsWalls, rendererVersion, inferLegacyCartography, parseBoundedMapJson, parseTacticalCartography, parseTacticalMapDocument, tacticalCartographyHash, tacticalCompositionHash, TACTICAL_MAP_LIMITS,
+  type BuildingIntent, type CartographyRegionV1, type KartenSetting, type Knoten, type LegacyCartographyEvidence, type TacticalCartographyV1, type TacticalMapDocumentV1, type TacticalPoint } from "@chronicle/szene";
 import * as P from "../../../protocol/src/tactical.ts";
 import type { Db } from "../db/index.ts";
 import { validateFloorRevision, roomFogFor, floorStackFor } from "./map-studio-state.ts";
@@ -18,6 +18,8 @@ import { authorizeActor, listControlledActorIds } from "./actors.ts";
 import { Conflict, Gone } from "./errors.ts";
 import { activeMapEntrances, assertMapActive, isMapDeleted, mapLifecycleRows, retiredMapKeys } from "./map-lifecycle.ts";
 import { validateImage, renderTacticalTile, renderCartographyImage, TACTICAL_RASTER_LIMITS } from "./tactical-raster.ts";
+import { stampSprites } from "./tactical-sprites.ts";
+import type { AtlasInput } from "./tactical-atlas.ts";
 import { applyTacticalPatch, sameTacticalValues, tacticalPointInside, tacticalCanonicalJson, type TacticalSnapshot, type TacticalTokenState, type TacticalPortalState, type TacticalPatch } from "./tactical-state.ts";
 
 export const TACTICAL_UNDO_LIMIT = 50;
@@ -30,6 +32,34 @@ function visiblePoint(view: Pick<P.TacticalView, "size" | "regions">, x: number,
   return x >= 0 && y >= 0 && x <= view.size[0] && y <= view.size[1] && view.regions.some(r => tacticalPointInside([x, y], r.points));
 }
 export class TacticalValidationError extends Error { readonly statusCode = 400; }
+/** Version of the Atlas pass; part of every town tile's digest, so a change repaints them. */
+const ATLAS_VERSION = "atlas-1";
+/** A town plan (buildings, no rooms) gets the Atlas pass over its flat drawing. */
+function atlasInput(map: P.TacticalMapCard, setting: KartenSetting): AtlasInput | undefined {
+  const cartography = map.cartography;
+  if (!cartography || map.document.background !== null || !cartography.regions.some(r => r.role === "building") || cartography.regions.some(r => r.role === "room")) return undefined;
+  const points = new Map(map.document.geometry.regions.map(region => [region.id, region.punkte]));
+  const cell = cartography.construction.cellSize, water: TacticalPoint[][] = [], roads: AtlasInput["roads"][number][] = [], buildings: AtlasInput["buildings"][number][] = [], forest: TacticalPoint[][] = [];
+  for (const role of cartography.regions) {
+    const ring = points.get(role.regionId); if (!ring || ring.length < 3) continue;
+    if (role.role === "water") water.push([...ring]);
+    else if (role.role === "road") roads.push({ points: [...ring], material: role.material });
+    else if (role.role === "terrain" && role.material === "forest") forest.push([...ring]);
+    else if (role.role === "building") {
+      // Height in storeys: a hall or dome stays low, a flat block rises with its footprint.
+      let area = 0; for (let i = 0; i < ring.length; i++) { const a = ring[i]!, b = ring[(i + 1) % ring.length]!; area += a[0] * b[1] - b[0] * a[1]; }
+      const cells = Math.abs(area) / 2 / (cell * cell), base = role.dach === "kuppel" ? 1.1 : role.dach === "halle" ? 1.3 : role.dach === "plattform" ? .1 : 1;
+      buildings.push({ points: [...ring], height: Math.min(4, base * (role.dach === "flach" ? .9 + Math.sqrt(cells) / 3 : .8 + Math.sqrt(cells) / 7)) });
+    }
+  }
+  return { setting, cell, night: cartography.mood === "nacht", winter: cartography.mood === "winter", water, roads, buildings, forest,
+    walls: cartographyPaintsWalls(cartography, map.document) ? map.document.walls.map(wall => [...wall.points]) : [] };
+}
+/** A player's tile carries what stands in the room: painted maps shade it, room plans add their walls. */
+function playerOverlayOptions(map: P.TacticalMapCard) {
+  return { shadow: map.cartography !== undefined && map.document.background === null, night: map.cartography?.mood === "nacht",
+    walls: map.cartography !== undefined && !cartographyPaintsWalls(map.cartography, map.document) };
+}
 function parse<T extends TSchema>(schema: T, input: unknown): Static<T> {
   const copy = parseBoundedMapJson(input, 96 * 1024 * 1024);
   if (!Value.Check(schema, copy)) throw new TacticalValidationError("Bitte Kartendaten und erwartete Version prüfen.");
@@ -489,7 +519,9 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       }
     }
     const cartographyPin = map.cartography ? { mapRevision: map.revision, compositionHash: map.compositionHash, rendererVersion, setting: (await source(tx, member.campaignId, map.sourceId)).provenance.setting ?? "fantasy" } : {};
-    const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, mapId: map.id, mapRevision: map.revision, size: map.document.geometry.size, regions, ...cartographyPin });
+    const rasterDigest = tacticalHash({ sessionId: row.session_id, perspectiveActorId: gm ? null : member.actorId, gm, mapId: map.id, mapRevision: map.revision, size: map.document.geometry.size, regions, ...cartographyPin,
+      // Only what a player's tile shows: a hidden mark moving never changes a player's tiles.
+      ...(gm ? {} : { overlay: stampSprites.visible(map.document, playerOverlayOptions(map).walls) }), ...(map.cartography ? { atlas: ATLAS_VERSION } : {}) });
     const floor = await floorView(tx, member.campaignId, map.id, here.floor?.version ?? 0, (x, y) => gm || visiblePoint({ size: map.document.geometry.size, regions }, x, y));
     const view: Omit<P.TacticalView, "digest"> = { sessionId: row.session_id, sceneId: row.scene_id, active: row.ended_at === null, gm, size: map.document.geometry.size, frame: map.document.frame, grid: map.document.grid, elevation: map.document.elevation,
       regions, entities: sorted(entities), tokens: projected, undoTargets, rasterDigest, ...(labels.length ? { labels } : {}),
@@ -643,7 +675,10 @@ export function createTactical(db: Db, cfg: DomainConfig = {}) {
       if (expectedView !== undefined && expectedView !== view.rasterDigest) throw new Conflict();
       const here = await where(tx, row), map = await mapCard(tx, campaignId, here.mapId, here.revision), original = await source(tx, campaignId, map.sourceId);
       return { digest: view.rasterDigest, request: { image: imageBytes(original), documentSize: view.size, regions: view.gm ? null : view.regions.map(r => r.points), level, x, y, tileSize: 256,
-        ...(map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}) } };
+        ...(map.cartography ? { drawing: cartographyDraw(map.document, map.cartography, original.provenance.setting ?? "fantasy") } : {}),
+        ...(() => { const atlas = atlasInput(map, original.provenance.setting ?? "fantasy"); return atlas ? { atlas } : {}; })(),
+        // The game master's board draws the furniture live; a player's tile carries it.
+        ...(view.gm ? {} : { overlay: await stampSprites.overlay(map.document, playerOverlayOptions(map)) }) } };
     });
     const tile = await renderTacticalTile(input.request);
     if ((await getSession(userId, campaignId, sessionId)).rasterDigest !== input.digest) throw new Conflict();
