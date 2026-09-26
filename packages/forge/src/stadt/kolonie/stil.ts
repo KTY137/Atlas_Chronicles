@@ -30,6 +30,7 @@ export const KOLONIE: StadtStil = Object.freeze<StadtStil>({
     if (aussen) rollen.set(aussen.nr, "hafen");
   },
   bebaue: bebaueSektor,
+  einmalig: { kommando: "lager" },
   typen: {
     wohnen: [["raumstation", 100]], markt: [["restaurant", 40], ["lager", 30], ["buero", 30]],
     handwerk: [["fabrik", 45], ["werkstatt", 35], ["labor", 20]], hafen: [["lager", 100]], adel: [["wohnblock", 100]],

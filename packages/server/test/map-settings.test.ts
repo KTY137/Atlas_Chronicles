@@ -209,5 +209,6 @@ describe("Kartensettings: generation, inherited interiors and native evidence", 
       expect(await restored.children(gm, campaign, { parentKind: "tactical", parentMapId: entered.mapId })).toMatchObject({ setting: "scifi", stil: "zeitwelten" });
       expect(currentCampaignSemanticDiff(bundle, await exportCampaignBundle(target, gm, campaign))).toEqual([]);
     } finally { await target.close(); }
-  }, 60_000);
+    // Zwei Exporte, eine neue Datenbank und eine Wiederherstellung: allein ~55 s, unter Last mehr.
+  }, 120_000);
 });

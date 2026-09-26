@@ -46,6 +46,23 @@ function fronten(block: Polygon, strassen: readonly Gasse[]) {
   return result.sort((x, y) => y.laenge - x.laenge);
 }
 const kanten = (block: Polygon) => block.flatMap((p, i) => { const b = block[(i + 1) % block.length]!; return Math.hypot(b[0] - p[0], b[1] - p[1]) >= 1.5 ? [{ von: p, bis: b }] : []; });
+/** Die Straße vor einer Blockkante: die nächste zur Kantenmitte. */
+function strasseVor(front: { a: Punkt; t: Punkt; laenge: number }, strassen: readonly Gasse[]): Gasse | undefined {
+  const m: Punkt = [front.a[0] + front.t[0] * front.laenge / 2, front.a[1] + front.t[1] * front.laenge / 2];
+  let beste: Gasse | undefined, abstand = Infinity;
+  for (const s of strassen) { const d = abstandPolygonStrecke([m], s.von, s.bis); if (d < abstand) { abstand = d; beste = s; } }
+  return beste;
+}
+/** Ein Rechteck, dessen Vorderkante auf `vorne` (entlang `t`, Tiefe in Richtung `n`) liegt; schrumpft
+ *  zur Straße hin, damit ein kleinerer Bau nicht nach hinten rückt. */
+function anDerFront(poly: Polygon, mitteKante: Punkt, t: Punkt, n: Punkt, versatz: number, vorne: number, laenge: number, tiefe: number): Polygon {
+  for (const s of [1, .82, .66, .5]) {
+    const d = tiefe * s, m: Punkt = [mitteKante[0] + t[0] * versatz + n[0] * (vorne + d / 2), mitteKante[1] + t[1] * versatz + n[1] * (vorne + d / 2)];
+    const r = rechteck(m, t, laenge * s, d);
+    if (r.every(p => imPolygon(p, poly))) return r;
+  }
+  return [];
+}
 /** Das größte Rechteck entlang `u` um `m`, das in `poly` passt — in drei Stufen geschrumpft. */
 function passend(poly: Polygon, m: Punkt, u: Punkt, laenge: number, breite: number): Polygon {
   for (const s of [1, .82, .66, .5]) {
@@ -144,9 +161,8 @@ export function bebaueStadtteil(a: ParzellenAuftrag): FleckBau {
       for (const [versatz, von, bis] of spalten) {
         // Am Ufer rückt die Halle zur Straße, bis sie trocken steht.
         for (const anteil of [1, .75, .55]) {
-          const dd = d0 * anteil, m: Punkt = [mitteKante[0] + front.t[0] * versatz + front.n[0] * (belegt + dd / 2), mitteKante[1] + front.t[1] * versatz + front.n[1] * (belegt + dd / 2)];
-          const halle = passend(b.poly, m, front.t, l, dd), los = zwischen(zwischen(b.poly, front.n, c0 + belegt - .4, c0 + belegt + dd + .4), front.t, von, bis);
-          const tuer = los.length >= 3 ? vorDerTuer(los, strassen) : null;
+          const dd = d0 * anteil, halle = anDerFront(b.poly, mitteKante, front.t, front.n, versatz, belegt, l, dd), los = zwischen(zwischen(b.poly, front.n, c0 + belegt - .4, c0 + belegt + dd + .4), front.t, von, bis);
+          const tuer = los.length >= 3 ? strasseVor(front, strassen) : undefined;
           if (halle.length && tuer && !nass(halle) && setze(losPfad(los, "halle"), halle, los, tuer, typ, 2)) break;
         }
       }
@@ -183,7 +199,8 @@ export function bebaueStadtteil(a: ParzellenAuftrag): FleckBau {
     else if (schluessel === "aussen") einfamilien(b, 2.1 * s, 1.5 * s, 1.35 * s, a.art === "weiler" ? null : "haus", .15);
     else if (schluessel === "adel") einfamilien(b, 3.4 * s, 2.3 * s, 1.9 * s, null, .35);
     else if (schluessel === "arm") {
-      const front = fronten(b.poly, strassen)[0], tuer = vorDerTuer(b.poly, strassen);
+      // Die Riegel stehen quer zur Straße an der Front: diese Straße ist ihre Adresse.
+      const front = fronten(b.poly, strassen)[0], tuer = front ? strasseVor(front, strassen) : undefined;
       if (!front || !tuer) { hoefe.push(b.poly); continue; }
       const tiefe = Math.max(...b.poly.map(p => (p[0] - front.a[0]) * front.n[0] + (p[1] - front.a[1]) * front.n[1]));
       const t0 = front.a[0] * front.t[0] + front.a[1] * front.t[1];

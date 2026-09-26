@@ -59,6 +59,8 @@ export interface StadtStil {
   /** Wie der Rollenschritt die Nutzung „burg" in Meldungen nennt. */
   readonly burgWort: string;
   readonly texte: { readonly zuKlein: string; readonly burgZuKlein: string };
+  /** Gebäude, die es je Ort nur einmal gibt, mit dem Typ, den weitere davon bekommen. */
+  readonly einmalig?: Readonly<Partial<Record<BauwerkTyp, BauwerkTyp>>>;
   /** Ein Hinweis für den Bericht, wenn ein Fleck seine Rolle nicht erfüllen konnte (einmal je Karte). */
   hinweis?(rolle: Rolle, bau: StilBau): string | undefined;
 }

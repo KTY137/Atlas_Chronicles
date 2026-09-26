@@ -46,7 +46,9 @@ export function siedlungsVorgabe(defaults: GenerationDefaults, art: SiedlungOpti
   return defaults.siedlungsartenJeSetting?.[setting]?.[art] ?? defaults.siedlungsarten?.[art] ?? defaults.siedlung;
 }
 export function changeGenerationSetting(value: GenerationSettings, setting: KartenSetting): GenerationSettings {
-  return { ...value, setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
+  // Mauer und Burg gehören zum Setting: eine abgewählte Stadtmauer ist kein abgewählter Schutzzaun.
+  const { mauer: _mauer, burg: _burg, ...rest } = value;
+  return { ...(setting === value.setting ? value : rest), setting, stil: setting === "fantasy" ? "gemalt" : "zeitwelten" };
 }
 export function generationDimensions(value: GenerationSettings, defaults: GenerationDefaults): readonly [number, number] {
   const std = value.art === "siedlung" && value.anlage && defaults.anlagen?.[value.anlage] ? defaults.anlagen[value.anlage]!.ausdehnung : value.art === "siedlung" ? siedlungsVorgabe(defaults, value.siedlung, value.setting).ausdehnung

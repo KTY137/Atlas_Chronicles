@@ -100,7 +100,7 @@ export const SiedlungOptionenSchema = Type.Object({
   // How mountainous the land is and how much of it carries woodland; 0..1 like the density.
   relief: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
   bewaldung: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
-  // Nur Fantasy: Stadtmauer mit Türmen und Toren, Burg am Stadtrand.
+  // Fantasy: Stadtmauer mit Türmen und Toren, Burg am Stadtrand. Sci-Fi: `mauer` ist der Schutzzaun.
   mauer: Type.Optional(Type.Boolean()),
   burg: Type.Optional(Type.Boolean()),
 }, closed);

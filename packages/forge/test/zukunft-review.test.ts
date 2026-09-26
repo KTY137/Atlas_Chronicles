@@ -56,6 +56,28 @@ describe("Schlussprüfung Teil 2", () => {
     }
     throw new Error("kein trockener Hof gefunden");
   }, 60_000);
+  it("sagt in Klartext, wenn deutlich weniger Gebäude auf die Karte passen als verlangt", () => {
+    let knapp = 0;
+    for (const setting of ["gegenwart", "scifi"] as const) for (let i = 0; i < 6; i++) {
+      const s = erzeugeSiedlung({ keim: `knapp:${setting}:${i}`, optionen: { setting, art: "stadt", standort: "insel" } }, zeitwelten);
+      const hinweis = s.bericht.ausgelassen.some(t => t.startsWith("Nur ") && t.includes(`von ${s.bericht.angefordert} Gebäuden`));
+      if (s.bauwerke.length < s.bericht.angefordert * .6) { knapp++; expect(hinweis, `${setting}/${i}`).toBe(true); }
+      else expect(hinweis, `${setting}/${i}`).toBe(false);
+    }
+    expect(knapp).toBeGreaterThan(0);
+  }, 120_000);
+  it.each([["scifi", "kommando"], ["gegenwart", "rathaus"]] as const)("%s: eine große Zone „Kommandozentrale“/„Rathaus & Ämter“ bekommt genau ein %s, und zwar in der Zone", (setting, typ) => {
+    const polygon = [[.05, .05], [.95, .05], [.95, .45], [.05, .45]] as const;
+    for (let i = 0; i < 3; i++) {
+      const s = erzeugeSiedlung({ keim: `einmal:${setting}:${i}`, optionen: { setting, art: "stadt", standort: "ebene", planung: zone("burg", polygon) } }, zeitwelten);
+      const [bw, bh] = [s.karte.geometry.size[0] / 96, s.karte.geometry.size[1] / 96], treffer = s.bauwerke.filter(b => b.typ === typ);
+      expect(treffer.length, `${setting}/${i}`).toBe(1);
+      const m = schwerpunkt(treffer[0]!.umriss);
+      expect(m[1] / bh, `${setting}/${i}`).toBeLessThanOrEqual(.47);
+      expect(treffer[0]!.titel).not.toMatch(/Lagerhaus|Büro/);
+      void bw;
+    }
+  }, 120_000);
   it("stellt Autos nicht in Parks und Gärten", () => {
     for (const keim of ["park:1", "park:2"]) {
       const s = erzeugeSiedlung({ keim, optionen: { setting: "gegenwart", art: "stadt", standort: "ebene" } }, zeitwelten);

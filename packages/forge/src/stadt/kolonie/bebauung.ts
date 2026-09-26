@@ -12,6 +12,7 @@ import { achse, platzUm, rechteck, vorDerTuer, type Bau, type FleckBau, type Par
  * halten innen einen Hydrokulturgarten; Wohntürme sind Achtecke; das Frachtquartier stapelt
  * Container; die Fertigung hat Hallen; der Raumhafen Landefelder auf einem Vorfeld.
  */
+const abstandZuPlatz = (a: Polygon, b: Polygon) => Math.min(...b.map((p, i) => abstandPolygonStrecke(a, p, b[(i + 1) % b.length]!)));
 const bandBreite = (s: Gasse) => flaeche(s.band) / (Math.hypot(s.bis[0] - s.von[0], s.bis[1] - s.von[1]) || 1);
 /** Kanten des Sektors, an denen eine Straße liegt. */
 function fronten(innen: Polygon, strassen: readonly Gasse[]) {
@@ -43,9 +44,10 @@ export function bebaueSektor(a: ParzellenAuftrag): FleckBau {
     if (!passend.length) return false;
     const platz = platzUm(innen, passend.map(([p]) => mitAbstand(p, .25)), a.pfad, "square").filter(p => !nass(p.polygon));
     if (!platz.length) return false;
-    const groesster = platz.reduce((x, y) => flaeche(y.polygon) > flaeche(x.polygon) ? y : x);
     plaetze.push(...platz);
-    for (const [p, typ, rang] of passend) setze(pfadVon(p, typ), p, p, a.id("markt", groesster.pfad), typ, rang);
+    // Jeder Bau hat das Deckstück zur Adresse, an dem er steht.
+    const naechstes = (p: Polygon) => platz.reduce((x, y) => abstandZuPlatz(p, y.polygon) < abstandZuPlatz(p, x.polygon) ? y : x);
+    for (const [p, typ, rang] of passend) setze(pfadVon(p, typ), p, p, a.id("markt", naechstes(p).pfad), typ, rang);
     return true;
   };
   /** Runde Bauten in Reihe an jeder Straßenkante: Mittelpunkte im Abstand, einen Radius nach innen. */

@@ -10,8 +10,10 @@ import { abstandPolygonStrecke, flaeche, schnittKonvex } from "../src/polygon.ts
  *  im Wasser, eine gültige Kartografie unter den Grenzen (Regionen, Bytes). */
 export function pruefeSiedlung(s: Siedlung, wo: string): void {
   expect(s.bauwerke.length, wo).toBeGreaterThan(0);
-  const strassen = new Set(s.strassen.map(x => x.id));
+  const strassen = new Set(s.strassen.map(x => x.id)), strassenFlaeche = new Map(s.strassen.map(x => [x.id, x.umriss]));
   for (const b of s.bauwerke) expect(strassen.has(b.strasse), `${wo} ${b.pfad}`).toBe(true);
+  // Ein Gebäude steht an seiner Straße: höchstens 1,6 Zellen Vorgarten, Hof oder Platz dazwischen.
+  for (const b of s.bauwerke) expect(abstandZwischen(b.umriss, strassenFlaeche.get(b.strasse)!), `${wo} ${b.typ} ${b.pfad} weit von der Straße`).toBeLessThanOrEqual(1.6);
   for (let a = 0; a < s.bauwerke.length; a++) for (let c = a + 1; c < s.bauwerke.length; c++)
     expect(getrennteDaecher(s.bauwerke[a]!.umriss, s.bauwerke[c]!.umriss), `${wo} ${s.bauwerke[a]!.pfad} / ${s.bauwerke[c]!.pfad}`).toBe(true);
   const z = s.karte.grid.kind === "square" ? s.karte.grid.size : 1, flaechen = new Map(s.karte.geometry.regions.map(g => [g.id, g.punkte.map(([x, y]) => [x / z, y / z] as const)]));
@@ -36,4 +38,11 @@ export function netzAnteil(s: Siedlung): number {
   const index = new Map(flaechen.map((f, i) => [f.id, i])), zaehler = new Map<number, number>();
   for (const b of s.bauwerke) { const w = wurzel(index.get(b.strasse)!); zaehler.set(w, (zaehler.get(w) ?? 0) + 1); }
   return Math.max(...zaehler.values()) / s.bauwerke.length;
+}
+
+/** Kleinster Abstand zweier Polygone (Ecke zu Kante, in beide Richtungen). */
+export function abstandZwischen(a: readonly (readonly [number, number])[], b: readonly (readonly [number, number])[]): number {
+  let d = Infinity;
+  for (const [von, zu] of [[a, b], [b, a]] as const) for (const p of von) for (let i = 0; i < zu.length; i++) d = Math.min(d, abstandPolygonStrecke([p], zu[i]!, zu[(i + 1) % zu.length]!));
+  return d;
 }

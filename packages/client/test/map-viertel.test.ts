@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { SettlementPlan } from "@chronicle/szene";
 import { ANLAGE_STANDARD, GRUNDRISS_STANDARD, HOEHLE_STANDARD, SIEDLUNG_STANDARD, siedlungStandard } from "@chronicle/forge";
-import { generationOptions, generationSettings, siedlungsVorgabe, type GenerationDefaults } from "../src/features/map-generation.ts";
+import { changeGenerationSetting, generationOptions, generationSettings, siedlungsVorgabe, type GenerationDefaults } from "../src/features/map-generation.ts";
 import { MapGenerationControls } from "../src/features/MapGenerationControls.tsx";
 import { MapZonePlanner } from "../src/features/MapZonePlanner.tsx";
 import { makeMapRecipe, parseMapRecipe, serializeMapRecipe } from "../src/features/map-recipes.ts";
@@ -23,6 +23,13 @@ describe("Stadtmauer, Burg und Viertel in der Oberfläche", () => {
     expect(generationOptions(stadt({ mauer: false, burg: true, setting: "scifi" }), defaults)).not.toHaveProperty("burg");
     expect(generationOptions(stadt({ mauer: false, setting: "gegenwart" }), defaults)).not.toHaveProperty("mauer");
     expect(generationOptions(stadt(), defaults)).not.toHaveProperty("mauer");
+  });
+  it("nimmt Mauer und Burg beim Wechsel des Settings nicht mit: jedes Setting beginnt mit seiner Vorgabe", () => {
+    const ohneMauer = changeGenerationSetting(stadt({ mauer: false, burg: false }), "scifi");
+    expect(ohneMauer).not.toHaveProperty("mauer");
+    expect(ohneMauer).not.toHaveProperty("burg");
+    expect(generationOptions(ohneMauer, defaults)).not.toHaveProperty("mauer");
+    expect(markup(ohneMauer)).toMatch(/<input type="checkbox" checked=""\/> Schutzzaun mit Toren/);
   });
   it("zeigt der Kolonie einen Schutzzaun und der heutigen Stadt keine Befestigung", () => {
     const kolonie = markup(stadt({ setting: "scifi" })), heute = markup(stadt({ setting: "gegenwart" }));

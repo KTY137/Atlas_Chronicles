@@ -44,7 +44,8 @@ describe("native v6 durable nested map addresses", () => {
   });
 
   it.each([
-    null, { typ: "burg", beschreibung: "" }, { typ: "haus" }, { typ: "haus", beschreibung: 42 },
+    // Ein unbekannter Gebäudetyp: „burg" ist seit Kartenstudio Teil 1 gültig, „drachenhort" nicht.
+    null, { typ: "drachenhort", beschreibung: "" }, { typ: "haus" }, { typ: "haus", beschreibung: 42 },
     { typ: "haus", beschreibung: "x".repeat(2001) }, { typ: "haus", beschreibung: "", titel: "duplicate" },
   ])("rejects malformed building metadata %j", metadata => {
     const data = fixture(), node = data.tables.tactical_map_nodes[0]!.data as MutableRow;

@@ -418,15 +418,29 @@ export function erzeugeViertelStadt(g: SiedlungGrund, basis: ViertelBasis, stil:
     if (naechster) { typ.set(naechster.b.pfad, t); vergeben.add(naechster.b.pfad); }
   };
   stil.sonderbauten({ art, markt, marktMitte, torPunkte, flussNah: fluss.length > 0, setze, amFluss, hatTyp: t => gewaehlt.some(b => b.typ === t) });
+  // Gebäude, die es je Ort nur einmal gibt (Kommandozentrale, Rathaus): das in einer gemalten Zone
+  // bleibt, sonst das am Markt; die anderen werden zum Ersatztyp des Stils (Schlussprüfung Teil 2).
+  const umgetypt = new Set<string>();
+  for (const [einmal, ersatz] of Object.entries(stil.einmalig ?? {}) as [BauwerkTyp, BauwerkTyp][]) {
+    const alle = gewaehlt.filter(b => typ.get(b.pfad) === einmal);
+    if (alle.length < 2) continue;
+    const zumMarkt = (b: typeof alle[number]) => { const m = schwerpunkt(b.umriss); return Math.hypot(m[0] - marktMitte[0], m[1] - marktMitte[1]); };
+    const bleibt = [...alle].sort((x, y) => Number(y.rolle === "burg") - Number(x.rolle === "burg") || x.rang - y.rang || zumMarkt(x) - zumMarkt(y) || (x.pfad < y.pfad ? -1 : 1))[0]!;
+    for (const b of alle) if (b !== bleibt) { typ.set(b.pfad, ersatz); umgetypt.add(b.pfad); }
+  }
   const titelGesehen = new Set<string>();
   const bauwerke: SiedlungBauwerk[] = gewaehlt.map((b, i) => {
     const t = typ.get(b.pfad)!;
-    let titel = b.titel ?? stil.titel(t, b, i, r);
+    let titel = (umgetypt.has(b.pfad) ? undefined : b.titel) ?? stil.titel(t, b, i, r);
     if (titelGesehen.has(titel)) titel = `${titel} ${i + 1}`;
     titelGesehen.add(titel);
     const dach = stil.dach(t);
     return { id: ids.knotenId("bauwerk", b.pfad), pfad: b.pfad, umriss: b.umriss, strasse: b.strasse, typ: t, titel, ...(dach ? { dach } : {}) };
   });
+  // Heutige Gebäude und Kuppeln sind größer als Fantasy-Häuser: die verlangte Zahl ist ein Höchstwert.
+  // Bleibt die Karte deutlich darunter, sagt der Bericht es und warum (Schlussprüfung Teil 2).
+  if (stil.setting !== "fantasy" && !planung?.zonen.length && bauwerke.length < optionen.bauwerke * .6)
+    ausgelassen.push(`Nur ${bauwerke.length} von ${optionen.bauwerke} Gebäuden passen auf diese Karte: die Gebäude dieses Settings sind größer als Fantasy-Häuser, und Wasser, Fels oder Ufer nehmen Platz weg. Eine größere Karte bietet mehr Raum.`);
   for (const b of gewaehlt) {
     const lid = id("grundstück", b.pfad);
     extraRegions.push({ id: lid, polygon: b.los, role: { ...rolle(lid), role: "lot" } });

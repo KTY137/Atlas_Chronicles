@@ -24,6 +24,7 @@ export const MODERN: StadtStil = Object.freeze<StadtStil>({
   befestigung: "ring", kernAnteil: .6, vorstadtAnteil: 1, strassenBleiben: true,
   breiten: art => art === "stadt" ? { haupt: 1.1, gasse: .85, wall: .85, ausfall: .95 } : art === "dorf" ? { haupt: .9, gasse: .7, wall: .7, ausfall: .8 } : { haupt: .7, gasse: .55, wall: .55, ausfall: .65 },
   bebaue: bebaueStadtteil,
+  einmalig: { rathaus: "buero" },
   typen: {
     wohnen: [["wohnblock", 70], ["haus", 20], ["cafe", 5], ["restaurant", 5]],
     markt: [["buero", 40], ["hotel", 15], ["bank", 10], ["supermarkt", 15], ["restaurant", 10], ["cafe", 10]],
